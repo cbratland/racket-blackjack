@@ -1,5 +1,4 @@
 #lang racket
-(require csc151)
 
 (require csc151)
 (require rackunit)
@@ -45,9 +44,8 @@
         (card "K" "H") (card "K" "D") (card "K" "S") (card "K" "C")
         (card "J" "H") (card "J" "D") (card "J" "S") (card "J" "C")))
 
-#|(define select-card
-  (lambda ()
-  (display(card-value(random-vector-elt cards)))))|#
+
+
 
  
 (define card-value->number
@@ -70,47 +68,3 @@
   (vector-copy standard-deck))
 (select-card deck)
 
-#|
-
-val procedure:(cond number? -> then itself
-                    ace->call another procedure to check another number (val-ace n) 
-                    string? -> 10
-(selecting-two-cards
-    (call select on cards .. call select cards on cards- 1)
-(adding vlaues
-  cond
-    1. numbers both -> +
-    2. number and not ace -> + number 10
-    3. Ace and num-> val-ace + num 
-    4. Ace and string-> num + 1
-    5. else: ace and ace : 20 
-  
-   
-
-
-
-
-|#
-
-
-               
-
-
-
-
-        
-#|(define values
-  (let ([key (card-value card)])
-    (cond[(number? (card-value card))
-         (card-value card)]
-         [(= "A"
-|#
-           
-
-(define tr
-  (card 2 "H"))
-; (card-value tr)
-;2
-
-#|(define non-ace-values
-  (let* [part (   |#
