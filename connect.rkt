@@ -4,11 +4,20 @@
 (require racket/udp)
 (require csc151)
 
+(define apptype 'null)
+(define myCrypt 'null)
+(define hostSoc null)
+(define quake 26000)
+(define dmode #t)
+
+(define display?
+  (λ (x)
+    (when dmode
+      (display x))))
+
 (define words (vector->immutable-vector (list->vector (file->lines "wordlist.txt"))))
 
 (define bind null)
-
-(define scrabble 2026)
 
 (define (crypt str)
   (string-join (map (section vector-ref words <>)
@@ -18,10 +27,6 @@
 (define (decrypt str)
   (string-join (map number->string (map (section vector-member <> words) (string-split str))) "."))
 
-(define (binder linkmn)
-  (let ([ip (decrypt linkmn)])
-    (udp-bind! (udp-open-socket #f #f) ip scrabble)))
-
 (define (get-ipv4-win)
   (let* ([ipstr (car (sequence->list (sequence-filter (o (section string-contains? <> "ipv4 address")
                                                          string-downcase)
@@ -29,18 +34,33 @@
          [ips-fidx (sub1 (string-length ipstr))])
     (string-trim (substring ipstr
                             (- (string-length ipstr) 15)
-                            (string-length ipstr)))))
+                            (sub1 (string-length ipstr))))))
+         
+(define (get-ipv4-mac)
+  (string-trim (car (string-split (cadr (string-split (car (sequence->list (in-lines (car (process (string-append "ifconfig | grep \"inet \"| grep -v 127.0.0.1"))))))
+                                                      "inet"))
+                                  "netmask"))))
+
+(define (get-ipv4-linux)
+  (let* ([ipstr (in-lines (car (process "ipconfig")))])
+    (string-trim ipstr)))
 
 (define get-ipv4
   (λ ()
-    (when (equal? 'windows (system-type))
-      (get-ipv4-win))))
+    (match (system-type)
+      ['windows (get-ipv4-win)]
+      ['mac (get-ipv4-mac)]
+      [_ (get-ipv4-linux)])))
 
 (define (begin-host)
-  (udp-open-socket))
+  (set! apptype 'host)
+  (udp-open-socket)
+  (set! myCrypt (crypt (get-ipv4))))
 
-(define (begin-user)
-  (??))
+(define (begin-user host)
+  (let ([hostIP (decrypt host)])
+    (set! hostSoc (udp-open-socket))
+    (udp-bind! hostSoc hostIP quake)))
 
 #|
 (define count 0)
@@ -69,5 +89,11 @@
     (loop start-time)))
 |#
 
-;2026
-;scrabble
+;;evt prac
+#| From TonyG's gist "Soak Testing Racket's UDP".
+(sync (handle-evt (udp-receive!-evt s buffer)
+		      (lambda (_)
+			(set! last-recv-time (current-inexact-milliseconds))
+			(set! received-count (+ received-count 1))
+			(inner-loop)))
+	  always-evt)|#
