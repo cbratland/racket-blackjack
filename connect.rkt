@@ -29,7 +29,7 @@
          [ips-fidx (sub1 (string-length ipstr))])
     (string-trim (substring ipstr
                             (- (string-length ipstr) 15)
-                            (sub1 (string-length ipstr))))))
+                            (string-length ipstr)))))
 
 (define get-ipv4
   (λ ()
