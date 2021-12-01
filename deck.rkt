@@ -48,15 +48,17 @@
 
 
  
-(define card-value->number
+(define card->number
   (lambda(val)
+    (if (null? val) 0
+        (let ([val (card-value val)])
   (cond [(number? val)
               val]
         [(string? val)
           (if (equal? "A" val)
               11
             10)]
-          [else 0])))
+          [else 0])))))
 
 (define select-card
   (lambda (cards)
@@ -68,3 +70,16 @@
   (vector-copy standard-deck))
 (select-card deck)
 
+;;;(calculate-score vec)
+;;;vec-> vector?(containing two cards?)
+;;; adds the values of two given cards that have already been selected 
+
+(define calculate-score
+  (lambda (vec)
+    (letrec ([helper
+              (lambda (vec n)
+                (if (zero? n)
+                     0
+                     (+ (card->number (vector-ref vec n)) (helper vec (- n 1)))))])
+      (helper vec (- (vector-length vec) 1)))))
+      
