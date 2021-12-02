@@ -1,9 +1,14 @@
 #lang racket
 
 (require racket/gui/base
-         (only-in mrlib/image-core render-image))
+         (only-in mrlib/image-core render-image)
+         "game.rkt")
 
-(require "game.rkt")
+(provide frame
+         open-game
+         open-title
+         send-message
+         set-score)
 
 ; game window
 (define frame (new frame%
@@ -113,11 +118,3 @@
       (if (zero? (get-flag 1))
           (enable-input)
           (player-moved))))
-
-; temporary game start
-(send frame show #t)
-(open-game)
-(initialize 1)
-(send-message "It's your turn")
-(enable-input)
-(set-score (get-score 1))
