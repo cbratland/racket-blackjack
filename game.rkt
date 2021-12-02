@@ -6,7 +6,11 @@
          initialize
          stand
          hit
-         get-score)
+         get-score
+         execute-dealer
+         game-done?
+         get-winner
+         get-flag)
 
 (define data
   (vector 0          ; # of players
@@ -66,7 +70,7 @@
   (let ([current-hand (get-hand x)])
     ;(vector-set! flags x 0) ; set play status (0 = playing)
     (set-hand x (append current-hand (build-list n (lambda (a) (select-card (get-deck))))))
-    (if (zero? (calculate-score (get-hand x))) (set-flag x 2) (set-flag x 0))))
+    (if (< (calculate-score (get-hand x)) 0) (set-flag x 2) (set-flag x 0))))
 
 ; (deal n)
 ; n = number of players
@@ -91,9 +95,11 @@
 ; (execute-dealer)
 ; execute a move for dealer
 (define (execute-dealer)
-  (if (< (get-score 0) 15)
-      (hit 0)
-      (stand 0)))
+  (if (zero? (get-flag 0))
+      (if (< (get-score 0) 15)
+          (hit 0)
+          (stand 0))
+      #f))
 
 ; (game-done?)
 ; checks if there are any players left in play
