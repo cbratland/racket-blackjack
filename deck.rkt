@@ -4,12 +4,14 @@
          select-card
          calculate-score
          card
-         card-value)
+         card-value
+         card->number)
 
-;;; H,D,S,C represent Heart, Spade, Club, Diamond respectively.
-;;; K,Q,J,A represent King, Queen, Jack and Ace respectively 
+;;; H,D,S,C represent Heart, Diamond, Spade, and Clubs respectively.
+;;; K,Q,J,A represent King, Queen, Jack, and Ace respectively 
 (struct card (value suit))
 
+;;; standard 52 card deck
 (define standard-deck
   (vector-immutable
    (card 2 "H") (card 2 "D") (card 2 "S") (card 2 "C")
@@ -26,33 +28,38 @@
    (card "K" "H") (card "K" "D") (card "K" "S") (card "K" "C")
    (card "J" "H") (card "J" "D") (card "J" "S") (card "J" "C")))
 
-(define card->number
-  (lambda(val)
-    (if (null? val) 0
-        (let ([val (card-value val)])
-          (cond [(number? val)
-                 val]
-                [(string? val)
-                 (if (equal? "A" val)
-                     11
-                     10)]
-                [else 0])))))
+;;; (card->number val) -> integer?
+(define (card->number val)
+  (if (null? val) 0
+      (let ([val (card-value val)])
+        (cond [(number? val)
+               val]
+              [(string? val)
+               (if (equal? "A" val)
+                   11
+                   10)]
+              [else 0]))))
 
-(define select-card
-  (lambda (cards)
-    (let* ([pos (random (vector-length cards))]
-           [chosen-one (vector-ref cards pos)])
-      (cond [(null? chosen-one) (select-card cards)]
-            [else (vector-set! cards pos null) chosen-one]))))
+;;; (nonnull? x) -> boolean?
+(define (nonnull? x)
+  (not (null? x)))
+
+;;; (select-card cards) -> card?
+(define (select-card cards)
+  (let* ([card-list (filter nonnull?  (vector->list cards))]
+         [pos (random (length card-list))]
+         [chosen-one (list-ref card-list pos)])
+    (vector-set! cards pos null)
+    chosen-one))
 
 ;;; (calculate-score cards) -> integer?
 ;;;  cards : listof card?
 ;;; Adds the values of all cards in a list.
-(define calculate-score
-  (lambda (cards)
-    (letrec ([add-cards
-              (lambda (cards)
-                (if (null? cards) 0
-                    (+ (card->number (car cards)) (calculate-score (cdr cards)))))])
-      (let ([score (add-cards cards)])
-        (if (> score 21) -1 score)))))
+;;;  todo: handle aces being 11 or 1
+(define (calculate-score cards)
+  (letrec ([add-cards
+            (lambda (cards)
+              (if (null? cards) 0
+                  (+ (card->number (car cards)) (add-cards (cdr cards)))))])
+    (let ([score (add-cards cards)])
+      (if (> score 21) -1 score))))

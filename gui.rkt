@@ -2,31 +2,29 @@
 
 (require racket/gui/base
          (only-in mrlib/image-core render-image)
-         "game.rkt")
+         "game.rkt"
+         "deck.rkt")
 
 (provide frame
          open-game
          open-title
          send-message
-         set-score)
+         set-score
+         set-dealer-score
+         start-game
+         start-blackjack)
 
 ; game window
 (define frame (new frame%
                    [label "Blackjack"]
-                   [width 300]
-                   [height 300]))
+                   [width 350]
+                   [height 0]))
 
 (define window-stack (new vertical-panel%
                           [parent frame]
                           [alignment (list 'center 'center)]))
 
-; text field
-; to get value: (send field get-text)
-(define server-field (new text-field%
-                          [parent window-stack]
-                          [label "Server"]))
-
-; system messages
+; general messages
 (define sys-message (new message%
                          [parent window-stack]
                          [label ""]
@@ -44,6 +42,7 @@
 (define (set-score x)
   (send score set-label (string-append "Current Score: " (number->string x))))
 
+
 ; card display canvas (todo)
 (define gameplay (new canvas%
                       [parent window-stack]
@@ -54,19 +53,17 @@
                          ; to render 2hdtp image: (render-image (circle 5 "solid" "red") dc 0 0)
                          )]))
 
-; host/join buttons
-(define host-join-btns (new horizontal-panel%
-                            [parent window-stack]
-                            [alignment (list 'center 'center)]))
-(define host-btn (new button%
-                      [parent host-join-btns]
-                      [label "Host"]
-                      [callback (lambda (button event) (open-game))]))
-(define join-btn (new button%
-                      [parent host-join-btns]
-                      [label "Join"]
-                      [enabled #f]
-                      [callback (lambda (button event) null)]))
+; dealer-score text (temporary)
+(define dealer-score (new message%
+                          [parent window-stack]
+                          [label "Dealer's Hand: ?"]
+                          [auto-resize #t]))
+
+(define (set-dealer-score x)
+  (send dealer-score set-label (string-append "Dealer's Hand: ? " (string-join (map (lambda (n)
+                                                                                      (let ([val (card-value n)])
+                                                                                        (if (number? val) (number->string val) val))) x)
+                                                                               " "))))
 
 ; hit/stand buttons
 (define hit-stand-btns (new horizontal-panel%
@@ -88,12 +85,61 @@
                                         (bust)]
                                        [else (player-moved)]))]))
 
+(define play-again-btn (new button%
+                            [parent window-stack]
+                            [label "Play Again"]
+                            [callback (lambda (button event) (start-game))]))
+
+; title screen buttons
+(define solo-btn (new button%
+                      [parent window-stack]
+                      [label "Singleplayer"]
+                      [callback (lambda (button event) (start-game))]))
+(define host-btn (new button%
+                      [parent window-stack]
+                      [label "Host"]
+                      [callback (lambda (button event) (open-host))]))
+(define join-btn (new button%
+                      [parent window-stack]
+                      [label "Join"]
+                      ;[enabled #f]
+                      [callback (lambda (button event) (open-join))]))
+
+; host screen
+(define start-btn (new button%
+                       [parent window-stack]
+                       [label "Start"]
+                       [callback (lambda (button event) (start-game))]))
+
+; join screen
+; to get text field value: (send field get-text)
+(define server-field (new text-field%
+                          [parent window-stack]
+                          [label "Server"]))
+(define join-btn2 (new button%
+                       [parent window-stack]
+                       [label "Join"]
+                       [callback (lambda (button event) (start-game))]))
+
+(define cancel-btn (new button%
+                        [parent window-stack]
+                        [label "Cancel"]
+                        [callback (lambda (button event) (open-title))]))
+
 ; switch windows
 (define (open-title)
-  (send window-stack change-children (lambda (old) (list host-join-btns))))
+  (send-message "Blackjack")
+  (send window-stack change-children (lambda (old) (list sys-message solo-btn host-btn join-btn))))
+
+(define (open-host)
+  (send-message "Waiting for players")
+  (send window-stack change-children (lambda (old) (list sys-message start-btn cancel-btn))))
+
+(define (open-join)
+  (send window-stack change-children (lambda (old) (list server-field join-btn2 cancel-btn))))
 
 (define (open-game)
-  (send window-stack change-children (lambda (old) (list sys-message gameplay score hit-stand-btns))))
+  (send window-stack change-children (lambda (old) (list sys-message gameplay score dealer-score hit-stand-btns))))
 
 ; enable input
 (define (enable-input)
@@ -107,14 +153,41 @@
 
 ; player busts (game end for solo)
 (define (bust)
-  (send-message "Busted!")
-  (disable-input))
+  (disable-input)
+  (end-game))
 
 ; determine what happens after player moves
 (define (player-moved)
   (disable-input)
   (execute-dealer)
-  (if (game-done?) (send-message (string-append (if (= (get-winner) 1) "You won!" "You lost.") " Dealer had " (number->string (get-score 0))))
+  (set-dealer-score (get-dealer-hand))
+  (if (game-done?) (end-game)
       (if (zero? (get-flag 1))
           (enable-input)
           (player-moved))))
+
+; end game
+(define (end-game)
+  (let ([winner (get-winner)])
+    (send-message (string-append (cond [(number? winner) (if (= winner 1) "You won!"
+                                                             (if (< (get-score 1) 0) "Busted!"
+                                                                 "You lost."))]
+                                       [(member 1 winner) "You tied!"]
+                                       [else "You lost."])
+                                 " Dealer had "
+                                 (number->string (get-score 0))))
+    (send window-stack change-children (lambda (old) (append old (list play-again-btn))))))
+
+; show window
+(define (start-blackjack)
+  (send frame show #t)
+  (open-title))
+
+; temporary game start (solo)
+(define (start-game)
+  (open-game)
+  (initialize 1)
+  (send-message "It's your turn")
+  (enable-input)
+  (set-score (get-score 1))
+  (set-dealer-score (get-dealer-hand)))

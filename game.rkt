@@ -10,7 +10,9 @@
          execute-dealer
          game-done?
          get-winner
-         get-flag)
+         get-flag
+         get-dealer-hand
+         get-hand)
 
 (define data
   (vector 0          ; # of players
@@ -18,6 +20,14 @@
           (vector)   ; current deck
           (vector)   ; flags
           (vector))) ; hands
+
+; import data
+(define (load-data imported-data)
+  (vector-set! data 0 (vector-ref imported-data 0))
+  (vector-set! data 1 (vector-ref imported-data 1))
+  (vector-set! data 2 (vector-ref imported-data 2))
+  (vector-set! data 3 (vector-ref imported-data 3))
+  (vector-set! data 4 (vector-ref imported-data 4)))
 
 ; n = # of players
 (define (initialize n)
@@ -58,6 +68,11 @@
   (vector-set! data 3 x))
 (define (set-hand pos x)
   (vector-set! (get-hands) pos x))
+
+; get visible dealer cards (excludes first card in hand)
+(define (get-dealer-hand)
+  (let ([hand (vector-ref (get-hands) 0)])
+    (if (null? hand) '() (cdr hand))))
 
 ; (get-score)
 (define (get-score x)
@@ -109,13 +124,19 @@
               (if (zero? x) (> (get-flag 0) 0)
                   (if (zero? (get-flag x)) #f
                       (players-done? (sub1 x)))))])
-    (players-done? 1))) ; fixme
+    (or (players-done? (get-player-num))
+        (= (get-flag 0) 2)))) ; dealer busted
 
 ; (get-winner)
 ; returns player id for the winner
 (define (get-winner)
   (let* ([player-hands (players-with-scores)]
-         [max (lambda (x1 x2) (if (> (cdr x1) (cdr x2)) x1 x2))])
+         [max (lambda (x1 x2)
+                (let ([a (cdr x1)]
+                      [b (cdr x2)])
+                  (cond [(> a b) x1]
+                        [(= a b) (cons (cons (car x1) (car x2)) a)] ; combine player numbers for a tie
+                        [else x2])))])
     (if (null? player-hands) 0
         (car (foldl max (car player-hands) (cdr player-hands))))))
 
