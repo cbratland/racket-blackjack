@@ -63,18 +63,18 @@
 
 
 (define soc (udp-open-socket #f #f))
-(udp-bind! soc #f 0)
 (define buffer (make-bytes 16))
 (define inputs null)
 (define host "")
-(define joinPort 65789)
-(define-values (a* portID c* d*) (udp-addresses soc true))
+(define joinPort 65535)
+(define portID 0)
 
 ; (recieve-thread) -> <void?>
 ;  Loops over the recieve function
 (define recieve-thread
   (thread (lambda () (let loop ()
-                       (sync/timeout #f (udp-receive!-evt soc buffer))
+                       (when (udp-bound? soc)
+                         (sync/timeout #f (udp-receive!-evt soc buffer)))
                        (set! inputs (append buffer))
                        (loop)))))
 
@@ -89,8 +89,11 @@
 ;  begins connection with host from the user side
 (define user-begin 
   (lambda (frhost)
+    (udp-bind! soc #f 0)
+    (let-values ([(a* b c* d*) (udp-addresses soc true)])
+      (set! portID b))
     (set! host (decrypt frhost))
-    (udp-send joinPort (string->bytes/utf-8 (string-join "joinBlackjackPort" (number->string joinPort))))))
+    (user-send joinPort (string->bytes/utf-8 (string-append "joinBlackjackPort" (number->string joinPort))))))
 
 ; (user-sender [prt] data) -> <void?>
 ;   prt : number
@@ -110,4 +113,4 @@
 ;  begins connection lobby
 (define server-begin
   (lambda ()
-    ))
+    (set! host (get-ipv4))))
