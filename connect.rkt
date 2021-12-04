@@ -105,3 +105,9 @@
   (λ ()
     (stop-recieve)
     (udp-close soc)))
+
+; (server-begin) -> <void?>
+;  begins connection lobby
+(define server-begin
+  (lambda ()
+    ))
