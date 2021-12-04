@@ -1,3 +1,4 @@
+
 #lang racket
 ;first message from the user must send ip
 
@@ -46,9 +47,8 @@
                                   "netmask"))))
 
 (define (get-ipv4-linux)
-  (let* ([ipstr (in-lines (car (process "ipconfig")))])
-    (string-trim ipstr))
-  (??))
+  (let* ([ipstr (car (sequence->list (in-lines (car (process "hostname -I")))))])
+    (string-trim ipstr)))
 
 (define get-ipv4
   (λ ()
@@ -63,7 +63,9 @@
 
 
 (define soc (udp-open-socket #f #f))
-(define buffer (make-bytes 16))
+(define first-recieve null)
+(define buffer (make-bytes 32))
+(define join-buffer (make-bytes 16))
 (define inputs null)
 (define host "")
 (define joinPort 65535)
@@ -74,9 +76,32 @@
 (define recieve-thread
   (thread (lambda () (let loop ()
                        (when (udp-bound? soc)
-                         (sync/timeout #f (udp-receive!-evt soc buffer)))
-                       (set! inputs (append buffer))
+                         (lambda ()
+                           (sync (udp-receive!-evt soc buffer))
+                           (set! inputs (append inputs (list (bytes->string/utf-8 buffer))))
+                           (set! buffer (make-bytes 16))))
                        (loop)))))
+
+; (recieve-thread) -> <void?>
+;  Loops over the recieve function
+(define join-thread
+  (thread
+   (lambda ()
+     (let loop ()
+       (if (zero? portID)
+             (lambda ()
+               (when (udp? first-recieve)
+                 (when (udp-bound? first-recieve)
+                   (sync (udp-receive!-evt first-recieve join-buffer))
+                   (displayln "recieved")))
+               (let ([inputstring (bytes->string/utf-8 join-buffer)])
+                 (if (string-contains? "joinBlackjack" inputstring)
+                     (lambda ()
+                       (set! portID (string->number (cadr (string-split inputstring "Port")))))
+                     null)))
+             
+             (kill-thread join-thread))
+       (loop)))))
 
 ; (stop-recieve) -> <void?>
 ;  Kills the recieve-thread thread
@@ -113,4 +138,6 @@
 ;  begins connection lobby
 (define server-begin
   (lambda ()
-    (set! host (get-ipv4))))
+    (set! host (get-ipv4))
+    (set! first-recieve (udp-open-socket))
+    (udp-bind! first-recieve #f joinPort)))
