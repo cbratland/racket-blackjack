@@ -3,12 +3,16 @@
 
 (require racket/udp)
 (require csc151)
+(require pkg)
+(require pkg/lib)
 
 (define apptype 'null)
 (define myCrypt 'null)
-(define hostSoc null)
-(define quake 26000)
 (define dmode #t)
+
+(define (randPort)
+  (when (zero? portID)
+    (set! portID (random 49152 65536))))
 
 (define display?
   (λ (x)
@@ -43,7 +47,8 @@
 
 (define (get-ipv4-linux)
   (let* ([ipstr (in-lines (car (process "ipconfig")))])
-    (string-trim ipstr)))
+    (string-trim ipstr))
+  (??))
 
 (define get-ipv4
   (λ ()
@@ -52,48 +57,43 @@
       ['mac (get-ipv4-mac)]
       [_ (get-ipv4-linux)])))
 
-(define (begin-host)
-  (set! apptype 'host)
-  (udp-open-socket)
-  (set! myCrypt (crypt (get-ipv4))))
 
-(define (begin-user host)
-  (let ([hostIP (decrypt host)])
-    (set! hostSoc (udp-open-socket))
-    (udp-bind! hostSoc hostIP quake)))
 
-#|
-(define count 0)
 
-(define s (udp-open-socket #f #f))
-(udp-bind! s #f 12346)
 
-(define buffer (make-bytes 1024))
 
-(let loop ((start-time #f))
-  (sync (udp-receive!-evt s buffer))
-  (udp-send-to s "127.0.0.1" 12345 #"pong")
-  (set! count (+ count 1))
-  
-  (let ([start-time (or start-time (current-inexact-milliseconds))])
-    (when (zero? (modulo count 100))
-      (display "\r")
-      (let* ([now (current-inexact-milliseconds)]
-	     [delta (- now start-time)]
-	     [rate (if (zero? delta) 0 (/ count (/ delta 1000)))])
-	(display (list 'count count
-		       'runtime (/ (truncate delta) 1000)
-		       'rate (truncate rate)
-		       'stamp now))))
-    
-    (loop start-time)))
-|#
+(define soc (udp-open-socket #f #f))
+(udp-bind! soc #f 0)
+(define buffer (make-bytes 16))
+(define inputs null)
+(define host "")
+(define-values (a* portID c* d*) (udp-addresses soc true))
 
-;;evt prac
-#| From TonyG's gist "Soak Testing Racket's UDP".
-(sync (handle-evt (udp-receive!-evt s buffer)
-		      (lambda (_)
-			(set! last-recv-time (current-inexact-milliseconds))
-			(set! received-count (+ received-count 1))
-			(inner-loop)))
-	  always-evt)|#
+; (recieve-thread) -> <void?>
+;  Loops over the recieve function
+(define recieve-thread
+  (thread (lambda () (let loop ()
+                       (sync/timeout #f (udp-receive!-evt soc buffer))
+                       (set! inputs (append buffer))
+                       (loop)))))
+
+; (stop-recieve) -> <void?>
+;  Kills the recieve-thread thread
+(define stop-recieve
+  (λ ()
+    (kill-thread recieve-thread)))
+
+; (user-begin frhost) -> <void?>
+;   frhost : string?
+;  begins connection with host from the user side
+(define user-begin
+  (lambda (frhost)
+    (set! host (decrypt frhost))
+    (user-send (bytes-append (string->bytes/utf-8 "port?") (string->bytes/utf-8 (number->string portID))))))
+
+; (user-sender data) -> <void?>
+;   data : bytes?
+;  sends data to the reciever port of the host
+(define user-send
+  (lambda (data)
+    (udp-send-to soc host portID data)))
