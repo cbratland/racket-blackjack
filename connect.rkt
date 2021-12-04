@@ -67,6 +67,7 @@
 (define buffer (make-bytes 16))
 (define inputs null)
 (define host "")
+(define joinPort 65789)
 (define-values (a* portID c* d*) (udp-addresses soc true))
 
 ; (recieve-thread) -> <void?>
@@ -86,14 +87,21 @@
 ; (user-begin frhost) -> <void?>
 ;   frhost : string?
 ;  begins connection with host from the user side
-(define user-begin
+(define user-begin 
   (lambda (frhost)
     (set! host (decrypt frhost))
-    (user-send (bytes-append (string->bytes/utf-8 "port?") (string->bytes/utf-8 (number->string portID))))))
+    (udp-send joinPort (string->bytes/utf-8 (string-join "joinBlackjackPort" (number->string joinPort))))))
 
-; (user-sender data) -> <void?>
+; (user-sender [prt] data) -> <void?>
+;   prt : number
 ;   data : bytes?
-;  sends data to the reciever port of the host
+;  sends data to the reciever port of the host, if prt is provided, send to prt port number instead of portID 
 (define user-send
-  (lambda (data)
-    (udp-send-to soc host portID data)))
+  (case-lambda
+    [(data) (udp-send-to soc host portID data)]
+    [(prt data) (udp-send-to soc host prt data)]))
+
+(define exit
+  (λ ()
+    (stop-recieve)
+    (udp-close soc)))
