@@ -2,15 +2,16 @@
 
 (require racket/gui/base
          (only-in mrlib/image-core render-image)
+         (only-in 2htdp/image scale)
          "game.rkt"
-         "deck.rkt")
+         "deck.rkt"
+         "cards.rkt")
 
 (provide frame
          open-game
          open-title
          send-message
          set-score
-         set-dealer-score
          start-game
          start-blackjack)
 
@@ -42,41 +43,33 @@
 (define (set-score x)
   (send score set-label (string-append "Current Score: " (number->string x))))
 
+; (render card-list dc y)
+(define (render card-list dc y)
+  (for-each (lambda (c x)
+              (render-image (scale 0.3 (card->image c)) dc (+ 10 (* x 50)) y))
+            card-list (range (length card-list))))
 
-; card display canvas (todo)
+; card display canvas
 (define gameplay (new canvas%
                       [parent window-stack]
                       [style (list 'transparent)]
                       [paint-callback
                        (lambda (canvas dc)
-                         null
-                         ; to render 2hdtp image: (render-image (circle 5 "solid" "red") dc 0 0)
+                         (cond [(> (vector-ref data 0) 0)
+                                (render (if (game-done?) (get-hand 0) (append (list (card "?" "?")) (get-dealer-hand))) dc 10)
+                                (render (get-hand 1) dc 70)
+                                ])
                          )]))
 
-; dealer-score text (temporary)
-(define dealer-score (new message%
-                          [parent window-stack]
-                          [label "Dealer's Hand: ?"]
-                          [auto-resize #t]))
-
-(define (set-dealer-score x)
-  (send dealer-score set-label (string-append "Dealer's Hand: ? " (string-join (map (lambda (n)
-                                                                                      (let ([val (card-value n)])
-                                                                                        (if (number? val) (number->string val) val))) x)
-                                                                               " "))))
-
 ; hit/stand buttons
-(define hit-stand-btns (new horizontal-panel%
-                            [parent window-stack]
-                            [alignment (list 'center 'center)]))
 (define stand-btn (new button%
-                       [parent hit-stand-btns]
+                       [parent window-stack]
                        [label "Stand"]
                        [callback (lambda (button event)
                                    (stand 1)
                                    (player-moved))]))
 (define hit-btn (new button%
-                     [parent hit-stand-btns]
+                     [parent window-stack]
                      [label "Hit"]
                      [callback (lambda (button event)
                                  (set-score (hit 1))
@@ -88,13 +81,13 @@
 (define play-again-btn (new button%
                             [parent window-stack]
                             [label "Play Again"]
-                            [callback (lambda (button event) (start-game))]))
+                            [callback (lambda (button event) (start-game 1))]))
 
 ; title screen buttons
 (define solo-btn (new button%
                       [parent window-stack]
                       [label "Singleplayer"]
-                      [callback (lambda (button event) (start-game))]))
+                      [callback (lambda (button event) (start-game 1))]))
 (define host-btn (new button%
                       [parent window-stack]
                       [label "Host"]
@@ -109,7 +102,7 @@
 (define start-btn (new button%
                        [parent window-stack]
                        [label "Start"]
-                       [callback (lambda (button event) (start-game))]))
+                       [callback (lambda (button event) (start-game 1))]))
 
 ; join screen
 ; to get text field value: (send field get-text)
@@ -119,7 +112,7 @@
 (define join-btn2 (new button%
                        [parent window-stack]
                        [label "Join"]
-                       [callback (lambda (button event) (start-game))]))
+                       [callback (lambda (button event) (start-game 1))]))
 
 (define cancel-btn (new button%
                         [parent window-stack]
@@ -139,7 +132,7 @@
   (send window-stack change-children (lambda (old) (list server-field join-btn2 cancel-btn))))
 
 (define (open-game)
-  (send window-stack change-children (lambda (old) (list sys-message gameplay score dealer-score hit-stand-btns))))
+  (send window-stack change-children (lambda (old) (list sys-message gameplay score hit-btn stand-btn))))
 
 ; enable input
 (define (enable-input)
@@ -158,9 +151,9 @@
 
 ; determine what happens after player moves
 (define (player-moved)
+  (send gameplay on-paint)
   (disable-input)
   (execute-dealer)
-  (set-dealer-score (get-dealer-hand))
   (if (game-done?) (end-game)
       (if (zero? (get-flag 1))
           (enable-input)
@@ -183,11 +176,10 @@
   (send frame show #t)
   (open-title))
 
-; temporary game start (solo)
-(define (start-game)
+; game start for host
+(define (start-game n)
   (open-game)
-  (initialize 1)
+  (initialize n)
   (send-message "It's your turn")
   (enable-input)
-  (set-score (get-score 1))
-  (set-dealer-score (get-dealer-hand)))
+  (set-score (get-score 1)))

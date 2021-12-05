@@ -3,6 +3,8 @@
 (require 2htdp/image
          "deck.rkt")
 
+(provide card->image)
+
 ;;; (card->image card) -> image?
 ;;;   card : card?
 ;;; Returns an image for the given card structure.
@@ -63,7 +65,8 @@
            [10 ten-clover]
            ["J" jack-clover]
            ["Q" queen-clover]
-           ["K" king-clover])]))
+           ["K" king-clover])]
+    ["?" back-card]))
 
 ;Card Background
 (define card-image
