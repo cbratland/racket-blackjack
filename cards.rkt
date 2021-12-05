@@ -1,6 +1,69 @@
 #lang racket
-(require 2htdp/image)
 
+(require 2htdp/image
+         "deck.rkt")
+
+;;; (card->image card) -> image?
+;;;   card : card?
+;;; Returns an image for the given card structure.
+(define (card->image card)
+  (match (card-suit card)
+    ["H" (match (card-value card)
+           ["A" one-heart]
+           [2 two-heart]
+           [3 three-heart]
+           [4 four-heart]
+           [5 five-heart]
+           [6 six-heart]
+           [7 seven-heart]
+           [8 eight-heart]
+           [9 nine-heart]
+           [10 ten-heart]
+           ["J" jack-heart]
+           ["Q" queen-heart]
+           ["K" king-heart])]
+    ["D" (match (card-value card)
+           ["A" one-diamond]
+           [2 two-diamond]
+           [3 three-diamond]
+           [4 four-diamond]
+           [5 five-diamond]
+           [6 six-diamond]
+           [7 seven-diamond]
+           [8 eight-diamond]
+           [9 nine-diamond]
+           [10 ten-diamond]
+           ["J" jack-diamond]
+           ["Q" queen-diamond]
+           ["K" king-diamond])]
+    ["S" (match (card-value card)
+           ["A" one-club]
+           [2 two-club]
+           [3 three-club]
+           [4 four-club]
+           [5 five-club]
+           [6 six-club]
+           [7 seven-club]
+           [8 eight-club]
+           [9 nine-club]
+           [10 ten-club]
+           ["J" jack-club]
+           ["Q" queen-club]
+           ["K" king-club])]
+    ["C" (match (card-value card)
+           ["A" one-clover]
+           [2 two-clover]
+           [3 three-clover]
+           [4 four-clover]
+           [5 five-clover]
+           [6 six-clover]
+           [7 seven-clover]
+           [8 eight-clover]
+           [9 nine-clover]
+           [10 ten-clover]
+           ["J" jack-clover]
+           ["Q" queen-clover]
+           ["K" king-clover])]))
 
 ;Card Background
 (define card-image

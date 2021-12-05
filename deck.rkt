@@ -5,6 +5,7 @@
          calculate-score
          card
          card-value
+         card-suit
          card->number)
 
 ;;; H,D,S,C represent Heart, Diamond, Spade, and Clubs respectively.
@@ -51,6 +52,9 @@
          [chosen-one (list-ref card-list pos)])
     (vector-set! cards pos null)
     chosen-one))
+
+(define (ace-count hand)
+  (length (filter (lambda (n) (equal? (card-value n) "A")) hand)))
 
 ;;; (calculate-score cards) -> integer?
 ;;;  cards : listof card?
