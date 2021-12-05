@@ -25,7 +25,7 @@
    (card 8 "H") (card 8 "D") (card 8 "S") (card 8 "C")
    (card 9 "H") (card 9 "D") (card 9 "S") (card 9 "C")
    (card 10 "H") (card 10 "D") (card 10 "S") (card 10 "C")
-   (card "A" "H") (card  "A" "D") (card "A" "S") (card "A" "C")
+   (card "A" "H") (card "A" "D") (card "A" "S") (card "A" "C")
    (card "Q" "H") (card "Q" "D") (card "Q" "S") (card "Q" "C")
    (card "K" "H") (card "K" "D") (card "K" "S") (card "K" "C")
    (card "J" "H") (card "J" "D") (card "J" "S") (card "J" "C")))

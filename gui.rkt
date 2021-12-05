@@ -46,7 +46,7 @@
 ; (render card-list dc y)
 (define (render card-list dc y)
   (for-each (lambda (c x)
-              (render-image (scale 0.3 (card->image c)) dc (+ 10 (* x 50)) y))
+              (render-image (scale 0.4 (card->image c)) dc (+ 10 (* x 65)) y))
             card-list (range (length card-list))))
 
 ; card display canvas
@@ -57,9 +57,7 @@
                        (lambda (canvas dc)
                          (cond [(> (vector-ref data 0) 0)
                                 (render (if (game-done?) (get-hand 0) (append (list (card "?" "?")) (get-dealer-hand))) dc 10)
-                                (render (get-hand 1) dc 70)
-                                ])
-                         )]))
+                                (render (get-hand 1) dc 85)]))]))
 
 ; hit/stand buttons
 (define stand-btn (new button%
@@ -91,6 +89,7 @@
 (define host-btn (new button%
                       [parent window-stack]
                       [label "Host"]
+                      ;[enabled #f]
                       [callback (lambda (button event) (open-host))]))
 (define join-btn (new button%
                       [parent window-stack]
