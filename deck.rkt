@@ -1,18 +1,19 @@
 #lang racket
 
-(provide standard-deck
-         select-card
-         calculate-score
-         card
+(provide card
          card-value
          card-suit
-         card->number)
+         standard-deck
+         select-card
+         calculate-score)
 
+;;; card structure
 ;;; H,D,S,C represent Heart, Diamond, Spade, and Clubs respectively.
 ;;; K,Q,J,A represent King, Queen, Jack, and Ace respectively 
 (struct card (value suit))
 
-;;; standard 52 card deck
+;;; standard-deck vector
+;;; Standard 52 card deck.
 (define standard-deck
   (vector-immutable
    (card 2 "H") (card 2 "D") (card 2 "S") (card 2 "C")
@@ -29,41 +30,50 @@
    (card "K" "H") (card "K" "D") (card "K" "S") (card "K" "C")
    (card "J" "H") (card "J" "D") (card "J" "S") (card "J" "C")))
 
-;;; (card->number val) -> integer?
-(define (card->number val)
-  (if (null? val) 0
-      (let ([val (card-value val)])
-        (cond [(number? val)
-               val]
-              [(string? val)
-               (if (equal? "A" val)
+;;; (card->number card) -> integer?
+;;;  card : card?
+;;; Converts a card to its corresponding score value.
+(define (card->number card)
+  (if (null? card) 0
+      (let ([card (card-value card)])
+        (cond [(number? card)
+               card]
+              [(string? card)
+               (if (equal? "A" card)
                    11
                    10)]
               [else 0]))))
 
-;;; (nonnull? x) -> boolean?
-(define (nonnull? x)
-  (not (null? x)))
-
 ;;; (select-card cards) -> card?
+;;;  cards : vectorof card?
+;;; Pulls a random card from a vector of cards, replaces it with null, and returns it.
 (define (select-card cards)
-  (let* ([card-list (filter nonnull?  (vector->list cards))]
+  (let* ([nonnull? (lambda (x) (not (null? x)))]
+         [card-list (filter nonnull?  (vector->list cards))]
          [pos (random (length card-list))]
          [chosen-one (list-ref card-list pos)])
     (vector-set! cards pos null)
     chosen-one))
 
-(define (ace-count hand)
-  (length (filter (lambda (n) (equal? (card-value n) "A")) hand)))
+;;; (ace-count cards) -> integer?
+;;;  cards : listof card?
+;;; Returns the number of aces in a list of cards.
+(define (ace-count cards)
+  (length (filter (lambda (n) (equal? (card-value n) "A")) cards)))
 
 ;;; (calculate-score cards) -> integer?
 ;;;  cards : listof card?
 ;;; Adds the values of all cards in a list.
-;;;  todo: handle aces being 11 or 1
 (define (calculate-score cards)
   (letrec ([add-cards
             (lambda (cards)
               (if (null? cards) 0
-                  (+ (card->number (car cards)) (add-cards (cdr cards)))))])
-    (let ([score (add-cards cards)])
-      (if (> score 21) -1 score))))
+                  (+ (card->number (car cards)) (add-cards (cdr cards)))))]
+           [final-score
+            (lambda (score aces)
+              (if (zero? aces) score
+                  (if (and (> score 21) (> aces 0)) (final-score (- score 10) (sub1 aces))
+                      score)))])
+    (let* ([score (add-cards cards)]
+           [final (final-score score (ace-count cards))])
+      (if (> final 21) -1 final))))
