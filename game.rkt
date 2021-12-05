@@ -78,7 +78,7 @@
 (define (get-score x)
   (calculate-score (get-hand x)))
 
-; (deal-to x)
+; (deal-to x n)
 ; x = player #
 ; n = number of cards to deal
 (define (deal-to x n)
@@ -87,9 +87,8 @@
     (set-hand x (append current-hand (build-list n (lambda (a) (select-card (get-deck))))))
     (if (< (calculate-score (get-hand x)) 0) (set-flag x 2) (set-flag x 0))))
 
-; (deal n)
-; n = number of players
-; deals two cards to n players and the dealer
+; (initial-deal)
+; deals two cards to all players and the dealer
 (define (initial-deal)
   (letrec ([deal (lambda (n)
                    (cond [(zero? n) (deal-to 0 2)]

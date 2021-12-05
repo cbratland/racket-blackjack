@@ -145,6 +145,7 @@
 
 ; player busts (game end for solo)
 (define (bust)
+  (send gameplay on-paint)
   (disable-input)
   (end-game))
 
