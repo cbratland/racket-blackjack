@@ -10,6 +10,11 @@
 ;;; card structure
 ;;; H,D,S,C represent Heart, Diamond, Spade, and Clubs respectively.
 ;;; K,Q,J,A represent King, Queen, Jack, and Ace respectively 
+
+; (card value suit) -> card?
+;   value : (or integer? string?)
+;   suit : string?
+;  creates a card type
 (struct card (value suit))
 
 ;;; standard-deck vector
